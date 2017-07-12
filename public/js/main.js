@@ -122,11 +122,13 @@ qbo = new QuickBooks(consumerKey,
                      true); // turn debugging on
 
 // test out account access
-qbo.findAccounts(function(_, accounts) {
-  console.log(accounts);
-  accounts.QueryResponse.Account.forEach(function(account) {
-    console.log(account.Name)
-  })
+qbo.findCustomers(function(_,QueryResponse) {
+
+  console.log(Object.keys(QueryResponse));
+  console.log(QueryResponse.QueryResponse.Customer[0].PrimaryEmailAddr);
+  // accounts.findCustomers.Account.forEach(function(account) {
+  //   console.log(account.Name)
+  // })
 })
 
 // })
