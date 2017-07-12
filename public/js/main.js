@@ -96,23 +96,11 @@ app.get('/requestToken', function(req, res) {
 
     res.redirect(QuickBooks.APP_CENTER_URL + requestToken.oauth_token)
   })
-  console.log(data);
-  console.log(postBody);
-  console.log(requestToken);
+  // console.log(data);
+  // console.log(postBody);
+  // console.log(requestToken);
 })
 
-//
-// function callback(error, response, body) {
-//   if (!error && response.statusCode == 200) {
-//     var info = JSON.parse(body);
-//     console.log(info)
-//   }
-// }
-//
-// request(options, callback);
-
-// console.log("this is here");
-// save the access token somewhere on behalf of the logged in user
 qbo = new QuickBooks(consumerKey,
                      consumerSecret,
                      accessToken,
@@ -123,7 +111,9 @@ qbo = new QuickBooks(consumerKey,
 
 // test out account access
 qbo.findCustomers(function(_,QueryResponse) {
+var options {
 
+}
   console.log(Object.keys(QueryResponse));
   console.log(QueryResponse.QueryResponse.Customer[0].PrimaryEmailAddr);
   // accounts.findCustomers.Account.forEach(function(account) {
