@@ -96,9 +96,9 @@ app.get('/requestToken', function(req, res) {
 
     res.redirect(QuickBooks.APP_CENTER_URL + requestToken.oauth_token)
   })
-  // console.log(data);
-  // console.log(postBody);
-  // console.log(requestToken);
+  console.log(data);
+  console.log(postBody);
+  console.log(requestToken);
 })
 
 qbo = new QuickBooks(consumerKey,
