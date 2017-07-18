@@ -65,7 +65,7 @@ function getFullApplications(newAppIds){
     }
     Promise.all(appResponses).each(function(response){
       // appResponses.each(function(response){
-        console.log(response.body)
+      scrubResponse(response)
       // });
       // for (var i = 0; i <appResponses.length; ++i){
       //   console.log(appResponses[i].Promise.IncomingMessage);
