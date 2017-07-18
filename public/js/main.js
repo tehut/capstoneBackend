@@ -49,6 +49,8 @@ function Customer(response){
 // let customerList = [];
 function getFullApplications(newAppIds){
   let appResponses = [];
+  let customerList = [];
+
   for (var i = 0; i <newAppIds.length; ++i){
     // newAppIds.forEach(function(appIdNumber){
 
@@ -63,16 +65,28 @@ function getFullApplications(newAppIds){
     };
     appResponses.push(request.getAsync(childOptions))
     }
-    Promise.all(appResponses).each(function(response){
-      // appResponses.each(function(response){
-      scrubResponse(response)
-      // });
-      // for (var i = 0; i <appResponses.length; ++i){
-      //   console.log(appResponses[i].Promise.IncomingMessage);
-    });
+    Promise.all(appResponses)
+      // .each(function(response){
+      //
+      //   // appResponses.each(function(response){
+      //   customerList.push(scrubResponse(response));
+      //   // console.log(response. .body);
+      //   // });
+      //   // for (var i = 0; i <appResponses.length; ++i){
+      //   //   console.log(appResponses[i].Promise.IncomingMessage);
+      //   // console.log( customerList)
+      //   return customerList
+      // })
+      .then(function(customerList){
+        return customerList.map(customer => {
+          return scrubResponse(customer)
+        })
+      }).then((customers)=> {
+        console.log(customers);
+        return customers
+      })
+// console.log(customerList);
 
-      // console.log("all  done");
-    // };
   }
 
   function scrubResponse(response){
@@ -90,6 +104,8 @@ function getFullApplications(newAppIds){
           thisCustomer.pEmails = bodyObject.fields.mother_email;
         }
         console.log("working on element");
+
+      return(thisCustomer);
   };
       // customerList.push(thisCustomer);
       // return new Promise.resolve(customerList)
@@ -140,8 +156,11 @@ function pullApplications (lastCallDate){
   };
 
 
-  request.getAsync(options)
-  .then((response) => {
+  return request.getAsync(options)
+};
+
+function buildAppIdArray (response){
+
     const newAppIds      = [];
     let newApps = JSON.parse(response.body);
     lastCallDate = response.caseless.dict.date
@@ -149,42 +168,90 @@ function pullApplications (lastCallDate){
       newAppIds.push(app.id);
     }
     return new Promise.resolve(newAppIds)
-    .then((newapps) => {
-      getFullApplications(newAppIds)
-    });
+}
 
-  })
-  .catch((error) => {
-    console.log(error)
-  });
-};
+
+
+
+pullApplications(lastCallDate)
+  .then(buildAppIdArray)
+  .then(getFullApplications)
+  // .then(postCustomer)
+
+// postCustomer()
+
+//
+// app.get('/requestToken', function(req, res) {
+//   var postBody = {
+//     url: QuickBooks.REQUEST_TOKEN_URL,
+//     oauth: {
+//       callback:        'http://localhost:' + port + '/callback/',
+//       consumer_key:    consumerKey,
+//       consumer_secret: consumerSecret
+//     }
+//   }
+//   request.post(postBody, function (e, r, data) {
+//     var requestToken = qs.parse(data)
+//     req.session.oauth_token_secret = requestToken.oauth_token_secret
+//
+//     res.redirect(QuickBooks.APP_CENTER_URL + requestToken.oauth_token)
+//   })
+//   console.log(data);
+//   console.log(postBody);
+//   console.log(requestToken);
+//
+
+// let qbo = new QuickBooks(consumerKey,
+//                      consumerSecret,
+//                      accessToken,
+//                      accessSecret,
+//                      realmId,
+//                      true, // use the Sandbox
+//                      true); // turn debugging on
+//
+// // test out account access
+// qbo.findCustomers(function(_,QueryResponse) {
+// // var options {
+// //
+// // }
+//   console.log(Object.keys(QueryResponse));
+//   console.log(QueryResponse.QueryResponse.Customer[0].PrimaryEmailAddr);
+//   // accounts.findCustomers.Account.forEach(function(account) {
+//   //   console.log(account.Name)
+//   // })
+// })
+// // }
+// })
+// })
+// res.send('<!DOCTYPE html><html lang="en"><head></head><body><script>window.opener.location.reload(); window.close();</script></body></html>')
+// })
 
 
 
 // createCustomer(newAppIds)
-function postCustomer(customerList){
-  console.log(customerList);
-app.get('/requestToken', function(req, res) {
-  var postBody = {
-    url: QuickBooks.REQUEST_TOKEN_URL,
-    oauth: {
-      callback:        'http://localhost:' + port + '/callback/',
-      consumer_key:    consumerKey,
-      consumer_secret: consumerSecret
-    }
-  }
-  request.post(postBody, function (e, r, data) {
-    var requestToken = qs.parse(data)
-    req.session.oauth_token_secret = requestToken.oauth_token_secret
+// function postCustomer(customerList){
+  // console.log(customerList);
+// app.get('/requestToken', function(req, res) {
+//   var postBody = {
+//     url: QuickBooks.REQUEST_TOKEN_URL,
+//     oauth: {
+//       callback:        'http://localhost:' + port + '/callback/',
+//       consumer_key:    consumerKey,
+//       consumer_secret: consumerSecret
+//     }
+//   }
+//   request.post(postBody, function (e, r, data) {
+//     var requestToken = qs.parse(data)
+//     req.session.oauth_token_secret = requestToken.oauth_token_secret
+//
+//     res.redirect(QuickBooks.APP_CENTER_URL + requestToken.oauth_token)
+//   })
+//   // console.log(data);
+//   // console.log(postBody);
+//   // console.log(requestToken);
+// })
 
-    res.redirect(QuickBooks.APP_CENTER_URL + requestToken.oauth_token)
-  })
-  // console.log(data);
-  // console.log(postBody);
-  // console.log(requestToken);
-})
-
-qbo = new QuickBooks(consumerKey,
+let qbo = new QuickBooks(consumerKey,
                      consumerSecret,
                      accessToken,
                      accessSecret,
@@ -194,7 +261,7 @@ qbo = new QuickBooks(consumerKey,
 
 // test out account access
 var options = {
-  "GivenName":"d",
+  "GivenName":"h",
   "FamilyName":"James",
   'BillAddr': {
     "Line1": "Jim and James"
@@ -206,26 +273,26 @@ var options = {
   }
 };
 
-  qbo.createCustomer(options, function(error,body){
+//   qbo.createCustomer(options, function(error,body){
+// //
+// console.log("this is body" + Object.keys(body))
+// console.log("this is error" + Object.keys(error));
+// // console.log(Customer);
 //
-console.log("this is body" + Object.keys(body))
-console.log("this is error" + Object.keys(error));
-// console.log(Customer);
+//
+//   console.log(Object.keys(QueryResponse));
+//   console.log(QueryResponse.QueryResponse.Customer[0].PrimaryEmailAddr);
+//   accounts.findCustomers.Account.forEach(function(account) {
+//     console.log(account.Name)
+//   })
+// });
 
-
-  console.log(Object.keys(QueryResponse));
-  console.log(QueryResponse.QueryResponse.Customer[0].PrimaryEmailAddr);
-  accounts.findCustomers.Account.forEach(function(account) {
-    console.log(account.Name)
-  })
-});
-
-};
+// };
 
 
 
 
-pullApplications(lastCallDate)
+// pullApplications(lastCallDate)
   // .then(getFullApplications(newAppIds))
   // .then(postCustomer(customerList));
 // // })
