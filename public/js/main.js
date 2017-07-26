@@ -41,6 +41,7 @@ function Customer(response){
   this.famName = response.fields['child_name.last'];
   this.parents = response.fields['mother/Guardian_name.first']; + ' & ' + response.fields['father/guardian_name.first']
   this.pEmails = response.fields["mother_email"] + ", " + response.fields["father_email"]
+  this.itemRef = "";
 };
 
 
@@ -65,140 +66,258 @@ function buildAppIdArray (response){
     newAppIds.push(app.id);
   }
   return new Promise.resolve(newAppIds)
-};
+}
 
 // defining the getFullApplications function where the indiv application is called
 // let customerList = [];
-  function scrubResponse(response){
-    let bodyObject = JSON.parse(response.body);
-    let thisCustomer = new Customer(bodyObject);
-    // scrubbing output for errors from variation in json keys
-    if (thisCustomer.parents === undefined){
-      thisCustomer.parents = bodyObject.fields['Primary Legal Guardian name:.first'] + ' & ' +bodyObject.fields['Secondary Guardian name:.first']
-    }
-    if (bodyObject.pEmails === undefined) {
-      thisCustomer.pEmails = bodyObject.fields['Primary Guardian_email '] + ' , ' + bodyObject.fields['Secondary Guardian_email']
-    } else if (bodyObject.fields.mother_email.includes(bodyObject.fields.father_email)){
-      thisCustomer.pEmails = bodyObject.fields.mother_email;
-    }
+function scrubResponse(response){
+  let bodyObject = JSON.parse(response.body);
+  let thisCustomer = new Customer(bodyObject);
+  // scrubbing output for errors from variation in json keys
+  if (thisCustomer.parents === undefined){
+    thisCustomer.parents = bodyObject.fields['Primary Legal Guardian name:.first'] + ' & ' +bodyObject.fields['Secondary Guardian name:.first']
+  }
+  if (bodyObject.pEmails === undefined) {
+    thisCustomer.pEmails = bodyObject.fields['Primary Guardian_email '] + ' , ' + bodyObject.fields['Secondary Guardian_email']
+  } else if (bodyObject.fields.mother_email.includes(bodyObject.fields.father_email)){
+    thisCustomer.pEmails = bodyObject.fields.mother_email;
+  }
 
 
-    return(thisCustomer);
-  };
+  return(thisCustomer);
+};
 
 
-  function getFullApplications(newAppIds){
-    let appResponses = [];
-    let customerList = [];
+function getFullApplications(newAppIds){
+  let appResponses = [];
+  let customerList = [];
 
-    for (var i = 0; i <newAppIds.length; ++i){
-      var childOptions = {
-        url: tcURL + 'api/v1/online_applications/' + newAppIds[i]+ '.json' ,
-        method: 'GET',
-        headers: {
-          'X-TransparentClassroomToken': tcToken
-        }
-      };
-      appResponses.push(request.getAsync(childOptions))
+  for (var i = 0; i <newAppIds.length; ++i){
+    var childOptions = {
+      url: tcURL + 'api/v1/online_applications/' + newAppIds[i]+ '.json' ,
+      method: 'GET',
+      headers: {
+        'X-TransparentClassroomToken': tcToken
       }
-      Promise.all(appResponses)
-
-        .then(function(customerList){
-          return customerList.map(customer => {
-            return scrubResponse(customer)
-          })
-        }).then((customers)=> {
-          let invoiceArray =[];
-          customers.forEach(customer=>{
-            let qbo = new QuickBooks(consumerKey,
-              consumerSecret,
-              accessToken,
-              accessSecret,
-              realmId,
-              true, // use the Sandbox
-              true);
-            var customerQuery = [
-                            {field: 'fetchAll', value: true},
-                            {field: 'GivenName', value: customer.gName, operator: 'LIKE'},
-                            {field: 'FamilyName', value: customer.famName, operator: 'LIKE'}
-            ]
-            qbo.findCustomers(customerQuery,function(error, response){
-              // TODO: The app currently doesn not return an error when there is no student Found
-              // Amerlia Fu is not a customer but she just returns an empty object==? "QueryResponse": {}
-              if(response.QueryResponse != {}){
-                console.log('this is the response ');
-
-                let sessions = ""
-                 customer.sessions.forEach((customer)=>{
-                   sessions += customer
-                });
-                // console.log(sessions);
-                // var invoiceObject = {
-                //   "Invoice": {
-                //     "Deposit": 0,
-                //     "domain" : "QBO",
-                //     ''
-                //   }
-                // }
-                console.log('#######################');
-                console.log(response.QueryResponse.Customer.id);
-                  if (customer.sessions.length == 2) {
-                  console.log("Summer and Fall Registration & Craft Fees : \" $350 \" ");
-                } else if (customer.sessions.length == 1 && sessions.includes("school years")){
-                  console.log("Fall Registration & Craft Fees : \" $250 \" ");
-                }else if (customer.sessions.length == 1 && sessions.includes("summer")){
-                  console.log("Summer Registration & Craft Fees : \" $200 \" ");
-                }
-            }
-              else {
-                console.log(response.QueryResponse);
-              }
-          },this)
-        })
-      });
     };
+    appResponses.push(request.getAsync(childOptions))
+  }
+  Promise.all(appResponses)
 
-function postCustomer(customerList){
-  console.log("this is postCustomer" +customerList);
-  let qbo = new QuickBooks(consumerKey,
-    consumerSecret,
-    accessToken,
-    accessSecret,
-    realmId,
-    true, // use the Sandbox
-    true); // turn debugging on
-    // console.log("this is customerList " + customerList);
+  .then(function(customerList){
+    return customerList.map(customer => {
+      return scrubResponse(customer)
+    })
+  }).then((customers)=> {
+    let invoiceArray =[];
+    customers.forEach(customer=>{
+      let qbo = new QuickBooks(consumerKey,
+        consumerSecret,
+        accessToken,
+        accessSecret,
+        realmId,
+        true, // use the Sandbox
+        true);
+        var customerQuery = [
+          {field: 'fetchAll', value: true},
+          // {field: 'GivenName', value: customer.gName, operator: 'LIKE'},
+          {field: 'FamilyName', value: customer.famName, operator: 'LIKE'}
+        ]
+        qbo.findCustomers(customerQuery,function(error, response){
+          // TODO: The app currently doesn not return an error when there is no student Found
+          // Amerlia Fu is not a customer but she just returns an empty object==? "QueryResponse": {}
+          if(response.QueryResponse.Customer){
 
-    qbo.findCustomers([
+            let sessions = ""
+            customer.sessions.forEach((customer)=>{
+                sessions += customer
+              });
+              var customerID = response.QueryResponse.Customer[0].Id
 
-      {field: 'fetchAll', value: true},
-      {field: 'GivenName', value: 'Oren', operator: 'LIKE'},
-      {field: 'FamilyName', value: 'Hess', operator: 'LIKE'}
-    ], function(error, response){
-        // console.log("TG>>> respons in the callback: " + Object.keys(response.QueryResponse.Customer));
-        response.QueryResponse.Customer.forEach(function(customer){
-          // return new Promise
-        });
-      });
-  };
+              // console.log(
+
+              if (customer.sessions.length == 2){
+                var invoice =
+                {
+                  "Line" : [
+                    {
+                      "LineNum" : 1,
+                      "Amount": 150,
+                      "DetailType": "SalesItemLineDetail",
+                      "SalesItemLineDetail": {
+                        "ItemRef": {
+                          "value": "39",
+                          "name": "New Student Registration Fee"
+                        }
+                      }
+                    }
+                    ,
+
+                    {
+                      "LineNum" : 2,
+                      "Amount": 150,
+                      "DetailType": "SalesItemLineDetail",
+                      "SalesItemLineDetail": {
+                        "ItemRef": {
+                          "value": "21",
+                          "name": "Craft Fee, Summer"
+                        }
+                      }
+                    }
+                    ,
+                    {
+                      "LineNum" : 3,
+                      "Amount": 100,
+                      "DetailType": "SalesItemLineDetail",
+                      "SalesItemLineDetail": {
+                        "ItemRef": {
+                          "value": "41",
+                          "name": "Returning Student Registration Fee"
+                        }
+                      }
+                    }
+                    ,
+                    {
+                      "LineNum": 4,
+                      "Description": "We charge a $100 Craft Fee for the School Year",
+                      "Amount": 100.0,
+                      "DetailType": "SalesItemLineDetail",
+                      "SalesItemLineDetail": {
+                        "ItemRef": {
+                          "value": "22",
+                          "name": "Craft Fee--School Year"
+                        }
+                      }
+                    }]
+                    ,
+                    "CustomerRef": {
+                      "value": customerID,
+                      "name": customer.gName + customer.famName
+                    }
+                  };
 
 
-pullApplications(lastCallDate)
-  .then(buildAppIdArray)
-  .then(getFullApplications)
-  // .then(postCustomer)
+                  qbo.createInvoice(invoice, function(error, response){console.error(error)})
+
+                } else if (customer.sessions.length == 1 && sessions.includes("school years")){
+                    var invoice =
+                    {
+                      "Line" : [
+                        {
+                          "LineNum" : 1,
+                          "Amount": 150,
+                          "DetailType": "SalesItemLineDetail",
+                          "SalesItemLineDetail": {
+                            "ItemRef": {
+                              "value": "39",
+                              "name": "New Student Registration Fee"
+                            }
+                          }
+                        }
+                        ,
+                        {
+                          "LineNum": 2,
+                          "Description": "We charge a $100 Craft Fee for the School Year",
+                          "Amount": 100.0,
+                          "DetailType": "SalesItemLineDetail",
+                          "SalesItemLineDetail": {
+                            "ItemRef": {
+                              "value": "22",
+                              "name": "Craft Fee--School Year"
+                            }
+                          }
+                        }]
+                        ,
+                        "CustomerRef": {
+                          "value": customerID,
+                          "name": customer.gName + customer.famName
+                        }
+                      };
+                  }
+                  else if (customer.sessions.length == 1 && sessions.includes("summer")){
+                    var invoice =
+                    {
+                      "Line" : [
+                        {
+                          "LineNum" : 1,
+                          "Amount": 150,
+                          "DetailType": "SalesItemLineDetail",
+                          "SalesItemLineDetail": {
+                            "ItemRef": {
+                              "value": "39",
+                              "name": "New Student Registration Fee"
+                            }
+                          }
+                        }
+                        ,
+                        {
+                          "LineNum" : 2,
+                          "Amount": 150,
+                          "DetailType": "SalesItemLineDetail",
+                          "SalesItemLineDetail": {
+                            "ItemRef": {
+                              "value": "21",
+                              "name": "Craft Fee, Summer"
+                            }
+                          }
+                        }]
+                        ,
+                        "CustomerRef": {
+                          "value": customerID,
+                          "name": customer.gName + customer.famName
+                        }
+                      };
+                    }
+                  }
+                  else {
+                    console.log("CUSTOMER NOT FOUND");
+                  }
+              },this)
+            })
+          });
+        };
+
+        function postCustomer(customerList){
+          console.log("this is postCustomer" +customerList);
+          let qbo = new QuickBooks(consumerKey,
+            consumerSecret,
+            accessToken,
+            accessSecret,
+            realmId,
+            true, // use the Sandbox
+            true); // turn debugging on
+            // console.log("this is customerList " + customerList);
+
+            qbo.findCustomers([
+
+              {field: 'fetchAll', value: true},
+              {field: 'GivenName', value: 'Oren', operator: 'LIKE'},
+              {field: 'FamilyName', value: 'Hess', operator: 'LIKE'}
+            ], function(error, response){
+              // console.log("TG>>> respons in the callback: " + Object.keys(response.QueryResponse.Customer));
+              response.QueryResponse.Customer.forEach(function(customer){
+                // return new Promise
+              });
+            });
+          };
 
 
-// Another approach to promises.map
+          pullApplications(lastCallDate)
+          .then(buildAppIdArray)
+          .then(getFullApplications)
+          // .then(postCustomer)
 
-  // .each(function(response){
-  //
-  //   // appResponses.each(function(response){
-  //   customerList.push(scrubResponse(response));
-  //   // console.log(response. .body);
-  //   // });
-  //   // for (var i = 0; i <appResponses.length; ++i){
-  //   //   console.log(appResponses[i].Promise.IncomingMessage);
-  //   // console.log( customerList)
-  //   return customerList
-  // })
+
+          // Another approach to promises.map
+
+          // .each(function(response){
+          //
+          //   // appResponses.each(function(response){
+          //   customerList.push(scrubResponse(response));
+          //   // console.log(response. .body);
+          //   // });
+          //   // for (var i = 0; i <appResponses.length; ++i){
+          //   //   console.log(appResponses[i].Promise.IncomingMessage);
+          //   // console.log( customerList)
+          //   return customerList
+          // })
