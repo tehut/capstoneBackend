@@ -140,6 +140,8 @@ function buildAppIdArray (response){
                 //     ''
                 //   }
                 // }
+                console.log('#######################');
+                console.log(response.QueryResponse.Customer.id);
                   if (customer.sessions.length == 2) {
                   console.log("Summer and Fall Registration & Craft Fees : \" $350 \" ");
                 } else if (customer.sessions.length == 1 && sessions.includes("school years")){
