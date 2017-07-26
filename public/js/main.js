@@ -65,7 +65,7 @@ function buildAppIdArray (response){
     newAppIds.push(app.id);
   }
   return new Promise.resolve(newAppIds)
-}
+};
 
 // defining the getFullApplications function where the indiv application is called
 // let customerList = [];
@@ -119,7 +119,7 @@ function buildAppIdArray (response){
               true);
             var customerQuery = [
                             {field: 'fetchAll', value: true},
-                            // {field: 'GivenName', value: customer.gName, operator: 'LIKE'},
+                            {field: 'GivenName', value: customer.gName, operator: 'LIKE'},
                             {field: 'FamilyName', value: customer.famName, operator: 'LIKE'}
             ]
             qbo.findCustomers(customerQuery,function(error, response){
